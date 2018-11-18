@@ -5,6 +5,8 @@ use Result;
 
 const SQLITE_DATETIME_FMT: &str = "%Y-%m-%dT%H:%M:%S.%fZ";
 const SQLITE_DATETIME_FMT_LEGACY: &str = "%Y-%m-%d %H:%M:%S:%f %Z";
+// Format from DATETIME('now') and DEFAULT CURRENT_TIMESTAMP
+const SQLITE_DATETIME_FMT_OUTPUT: &str = "%Y-%m-%d %H:%M:%S";
 
 impl ToSql for time::Timespec {
     fn to_sql(&self) -> Result<ToSqlOutput> {
@@ -22,8 +24,10 @@ impl FromSql for time::Timespec {
             .as_str()
             .and_then(|s| {
                 time::strptime(s, SQLITE_DATETIME_FMT).or_else(|err| {
-                    time::strptime(s, SQLITE_DATETIME_FMT_LEGACY)
-                        .or_else(|_| Err(FromSqlError::Other(Box::new(err))))
+                    time::strptime(s, SQLITE_DATETIME_FMT_LEGACY).or_else(|_| {
+                        time::strptime(s, SQLITE_DATETIME_FMT_OUTPUT)
+                            .or_else(|_| Err(FromSqlError::Other(Box::new(err))))
+                    })
                 })
             })
             .map(|tm| tm.to_timespec())
@@ -38,6 +42,8 @@ mod test {
     fn checked_memory_handle() -> Connection {
         let db = Connection::open_in_memory().unwrap();
         db.execute_batch("CREATE TABLE foo (t TEXT, i INTEGER, f FLOAT)")
+            .unwrap();
+        db.execute_batch("CREATE TABLE foo2 (t DEFAULT CURRENT_TIMESTAMP, t2 TEXT)")
             .unwrap();
         db
     }
@@ -66,5 +72,16 @@ mod test {
 
             assert_eq!(from, ts);
         }
+        db.execute_batch("INSERT INTO foo2 (t2) VALUES (DATETIME('now'))")
+            .unwrap();
+        let _a: time::Timespec = db
+            .query_row("SELECT t FROM foo2", NO_PARAMS, |r| r.get(0))
+            .unwrap();
+        let _b: time::Timespec = db
+            .query_row("SELECT t2 FROM foo2", NO_PARAMS, |r| r.get(0))
+            .unwrap();
+        let _c: time::Timespec = db
+            .query_row("SELECT DATETIME('now')", NO_PARAMS, |r| r.get(0))
+            .unwrap();
     }
 }
