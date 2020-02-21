@@ -66,7 +66,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::cache::StatementCache;
 use crate::inner_connection::{InnerConnection, BYPASS_SQLITE_INIT};
-use crate::raw_statement::RawStatement;
+pub use crate::raw_statement::RawStatement;
 use crate::types::ValueRef;
 
 pub use crate::cache::CachedStatement;

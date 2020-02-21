@@ -8,7 +8,7 @@ use std::os::raw::c_int;
 use std::ptr;
 use std::sync::Arc;
 
-// Private newtype for raw sqlite3_stmts that finalize themselves when dropped.
+/// Private newtype for raw sqlite3_stmts that finalize themselves when dropped.
 #[derive(Debug)]
 pub struct RawStatement {
     ptr: *mut ffi::sqlite3_stmt,
@@ -28,6 +28,7 @@ pub struct RawStatement {
     statement_cache_key: Option<Arc<str>>,
 }
 
+#[allow(clippy::missing_safety_doc, missing_docs)]
 impl RawStatement {
     #[inline]
     pub unsafe fn new(stmt: *mut ffi::sqlite3_stmt, tail: usize) -> RawStatement {

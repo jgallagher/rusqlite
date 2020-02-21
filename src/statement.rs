@@ -521,8 +521,9 @@ impl Statement<'_> {
         Ok(self.stmt.bind_parameter_index(name))
     }
 
+    /// Bind positional parameters to statement
     #[inline]
-    pub(crate) fn bind_parameters<P>(&mut self, params: P) -> Result<()>
+    pub fn bind_parameters<P>(&mut self, params: P) -> Result<()>
     where
         P: IntoIterator,
         P::Item: ToSql,
@@ -543,8 +544,9 @@ impl Statement<'_> {
         }
     }
 
+    /// Bind named parameters to statement
     #[inline]
-    pub(crate) fn bind_parameters_named<T: ?Sized + ToSql>(
+    pub fn bind_parameters_named<T: ?Sized + ToSql>(
         &mut self,
         params: &[(&str, &T)],
     ) -> Result<()> {
@@ -788,11 +790,15 @@ impl Statement<'_> {
         Ok(())
     }
 
-    /// Safety: This is unsafe, because using `sqlite3_stmt` after the
+    /// Convert Statement into a RawStatement
+    ///
+    /// # Safety
+    ///
+    /// This is unsafe, because using `sqlite3_stmt` after the
     /// connection has closed is illegal, but `RawStatement` does not enforce
     /// this, as it loses our protective `'conn` lifetime bound.
     #[inline]
-    pub(crate) unsafe fn into_raw(mut self) -> RawStatement {
+    pub unsafe fn into_raw(mut self) -> RawStatement {
         let mut stmt = RawStatement::new(ptr::null_mut(), 0);
         mem::swap(&mut stmt, &mut self.stmt);
         stmt
