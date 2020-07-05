@@ -77,6 +77,11 @@ use crate::types::ValueRef;
 
 pub use crate::cache::CachedStatement;
 pub use crate::column::Column;
+#[cfg(any(
+    feature = "loadable_extension",
+    feature = "loadable_extension_embedded"
+))]
+pub use crate::error::to_sqlite_error;
 pub use crate::error::Error;
 pub use crate::ffi::ErrorCode;
 #[cfg(feature = "hooks")]
@@ -101,6 +106,10 @@ mod cache;
 #[cfg(feature = "collation")]
 mod collation;
 mod column;
+#[cfg(not(any(
+    feature = "loadable_extension",
+    feature = "loadable_extension_embedded"
+)))]
 pub mod config;
 #[cfg(any(feature = "functions", feature = "vtab"))]
 mod context;
@@ -907,7 +916,13 @@ impl InterruptHandle {
     pub fn interrupt(&self) {
         let db_handle = self.db_lock.lock().unwrap();
         if !db_handle.is_null() {
-            unsafe { ffi::sqlite3_interrupt(*db_handle) }
+            #[cfg(not(any(
+                feature = "loadable_extension",
+                feature = "loadable_extension_embedded"
+            )))] // no sqlite3_interrupt in a loadable extension
+            unsafe {
+                ffi::sqlite3_interrupt(*db_handle)
+            }
         }
     }
 }

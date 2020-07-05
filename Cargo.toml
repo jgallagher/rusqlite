@@ -21,28 +21,31 @@ maintenance = { status = "actively-developed" }
 name = "rusqlite"
 
 [workspace]
-members = ["libsqlite3-sys"]
+members = ["libsqlite3-sys", "dummy-extension"]
 
 [features]
 load_extension = []
 # hot-backup interface: 3.6.11 (2009-02-18)
-backup = ["libsqlite3-sys/min_sqlite_version_3_6_23"]
+backup = ["libsqlite3-sys/min_sqlite_version_3_7_16"]
 # sqlite3_blob_reopen: 3.7.4
-blob = ["libsqlite3-sys/min_sqlite_version_3_7_7"]
+blob = ["libsqlite3-sys/min_sqlite_version_3_7_16"]
 collation = []
 # sqlite3_create_function_v2: 3.7.3 (2010-10-08)
-functions = ["libsqlite3-sys/min_sqlite_version_3_7_7"]
+functions = ["libsqlite3-sys/min_sqlite_version_3_7_16"]
 # sqlite3_log: 3.6.23 (2010-03-09)
-trace = ["libsqlite3-sys/min_sqlite_version_3_6_23"]
+trace = ["libsqlite3-sys/min_sqlite_version_3_7_16"]
 bundled = ["libsqlite3-sys/bundled", "modern_sqlite"]
 buildtime_bindgen = ["libsqlite3-sys/buildtime_bindgen"]
+loadable_extension = ["libsqlite3-sys/loadable_extension"]
+loadable_extension_embedded = ["libsqlite3-sys/loadable_extension_embedded"]
 limits = []
 hooks = []
 i128_blob = ["byteorder"]
+# when `sqlcipher` is used, `bundled` and `loadable_extension` are ignored
 sqlcipher = ["libsqlite3-sys/sqlcipher"]
 unlock_notify = ["libsqlite3-sys/unlock_notify"]
 # xSavepoint, xRelease and xRollbackTo: 3.7.7 (2011-06-23)
-vtab = ["libsqlite3-sys/min_sqlite_version_3_7_7", "lazy_static"]
+vtab = ["libsqlite3-sys/min_sqlite_version_3_7_16", "lazy_static"]
 csvtab = ["csv", "vtab"]
 # pointer passing interfaces: 3.20.0
 array = ["vtab"]
@@ -102,7 +105,6 @@ lazy_static = { version = "1.0", optional = true }
 byteorder = { version = "1.2", features = ["i128"], optional = true }
 fallible-iterator = "0.2"
 fallible-streaming-iterator = "0.1"
-memchr = "2.2.0"
 uuid = { version = "0.8", optional = true }
 smallvec = "1.3"
 

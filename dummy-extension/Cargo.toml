@@ -1,0 +1,20 @@
+[package]
+name = "dummy-extension"
+version = "0.0.1"
+authors = ["The rusqlite developers"]
+edition = "2018"
+repository = "https://github.com/rusqlite/rusqlite"
+description = "Dummy extension"
+license = "MIT"
+keywords = ["sqlite", "extension"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+
+[dependencies.rusqlite]
+path = ".."
+default-features = false
+features = ["loadable_extension", "vtab"]
+version = "0.23.1"

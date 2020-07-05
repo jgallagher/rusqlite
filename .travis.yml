@@ -27,6 +27,7 @@ script:
   - cargo build --features bundled
   - cargo build --features sqlcipher
   - cargo build --features "bundled sqlcipher"
+  - cargo build --features "loadable_extension backup blob collation functions limits hooks unlock_notify vtab window bundled"
   - cargo test
   - cargo test --features "backup blob extra_check"
   - cargo test --features "collation functions"

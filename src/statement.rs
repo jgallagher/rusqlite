@@ -678,12 +678,20 @@ impl Statement<'_> {
     }
 
     /// Get the value for one of the status counters for this statement.
+    #[cfg(not(any(
+        feature = "loadable_extension",
+        feature = "loadable_extension_embedded"
+    )))]
     pub fn get_status(&self, status: StatementStatus) -> i32 {
         self.stmt.get_status(status, false)
     }
 
     /// Reset the value of one of the status counters for this statement,
     /// returning the value it had before resetting.
+    #[cfg(not(any(
+        feature = "loadable_extension",
+        feature = "loadable_extension_embedded"
+    )))]
     pub fn reset_status(&self, status: StatementStatus) -> i32 {
         self.stmt.get_status(status, true)
     }

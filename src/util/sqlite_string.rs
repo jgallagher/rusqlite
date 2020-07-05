@@ -2,13 +2,19 @@
 // used in each feature. Avoid having to track this for each function. We will
 // still warn for anything that's not used by either, though.
 #![cfg_attr(
-    not(all(feature = "vtab", feature = "modern-sqlite")),
+    not(all(feature = "vtab", feature = "loadable_extension", feature = "loadable_extension_embedded", feature = "modern-sqlite")),
     allow(dead_code)
 )]
 use crate::ffi;
 use std::marker::PhantomData;
 use std::os::raw::{c_char, c_int};
 use std::ptr::NonNull;
+
+// Space to hold this string must be obtained
+// from an SQLite memory allocation function
+pub(crate) fn alloc(s: &str) -> *mut c_char {
+    SqliteMallocString::from_str(s).into_raw()
+}
 
 /// A string we own that's allocated on the SQLite heap. Automatically calls
 /// `sqlite3_free` when dropped, unless `into_raw` (or `into_inner`) is called
@@ -40,7 +46,7 @@ impl SqliteMallocString {
     /// SAFETY: Caller must be certain that `m` a nul-terminated c string
     /// allocated by sqlite3_malloc, and that SQLite expects us to free it!
     #[inline]
-    pub(crate) unsafe fn from_raw_nonnull(ptr: NonNull<c_char>) -> Self {
+    unsafe fn from_raw_nonnull(ptr: NonNull<c_char>) -> Self {
         Self {
             ptr,
             _boo: PhantomData,
@@ -57,7 +63,7 @@ impl SqliteMallocString {
     /// Get the pointer behind `self`. After this is called, we no longer manage
     /// it.
     #[inline]
-    pub(crate) fn into_inner(self) -> NonNull<c_char> {
+    fn into_inner(self) -> NonNull<c_char> {
         let p = self.ptr;
         std::mem::forget(self);
         p
@@ -66,19 +72,19 @@ impl SqliteMallocString {
     /// Get the pointer behind `self`. After this is called, we no longer manage
     /// it.
     #[inline]
-    pub(crate) fn into_raw(self) -> *mut c_char {
+    fn into_raw(self) -> *mut c_char {
         self.into_inner().as_ptr()
     }
 
     /// Borrow the pointer behind `self`. We still manage it when this function
     /// returns. If you want to relinquish ownership, use `into_raw`.
     #[inline]
-    pub(crate) fn as_ptr(&self) -> *const c_char {
+    fn as_ptr(&self) -> *const c_char {
         self.ptr.as_ptr()
     }
 
     #[inline]
-    pub(crate) fn as_cstr(&self) -> &std::ffi::CStr {
+    fn as_cstr(&self) -> &std::ffi::CStr {
         unsafe { std::ffi::CStr::from_ptr(self.as_ptr()) }
     }
 
@@ -102,7 +108,7 @@ impl SqliteMallocString {
     ///
     /// This means it's safe to use in extern "C" functions even outside of
     /// catch_unwind.
-    pub(crate) fn from_str(s: &str) -> Self {
+    fn from_str(s: &str) -> Self {
         use std::convert::TryFrom;
         let s = if s.as_bytes().contains(&0) {
             std::borrow::Cow::Owned(make_nonnull(s))
