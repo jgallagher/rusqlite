@@ -379,7 +379,8 @@ mod bindings {
         let mut bindings = bindgen::builder()
             .header(header.clone())
             .parse_callbacks(Box::new(SqliteTypeChooser))
-            .rustfmt_bindings(true);
+            .rustfmt_bindings(true)
+            .clang_arg("-DSQLITE_API=__attribute__ ((visibility(\"default\")))"); // ensure SQLITE_API functions are not hidden
 
         if cfg!(feature = "unlock_notify") {
             bindings = bindings.clang_arg("-DSQLITE_ENABLE_UNLOCK_NOTIFY");
