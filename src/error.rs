@@ -358,3 +358,24 @@ macro_rules! check {
         }
     }};
 }
+
+/// Transform Rust error to SQLite error (message and code).
+/// # Safety
+/// This function is unsafe because it uses raw pointer
+pub unsafe fn to_sqlite_error(
+    e: &Error,
+    err_msg: *mut *mut std::os::raw::c_char,
+) -> std::os::raw::c_int {
+    match e {
+        Error::SqliteFailure(err, s) => {
+            if let Some(s) = s {
+                *err_msg = crate::util::SqliteMallocString::from_str(&s).into_raw();
+            }
+            err.extended_code
+        }
+        err => {
+            *err_msg = crate::util::SqliteMallocString::from_str(&err.to_string()).into_raw();
+            ffi::SQLITE_ERROR
+        }
+    }
+}

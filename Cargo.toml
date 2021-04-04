@@ -30,11 +30,14 @@ backup = ["libsqlite3-sys/min_sqlite_version_3_6_23"]
 blob = ["libsqlite3-sys/min_sqlite_version_3_7_7"]
 collation = []
 # sqlite3_create_function_v2: 3.7.3 (2010-10-08)
-functions = ["libsqlite3-sys/min_sqlite_version_3_7_7"]
+# functions requires ffi::SQLITE_DETERMINISTIC: 3.8.3 (2014-02-03)
+functions = ["modern_sqlite"]
 # sqlite3_log: 3.6.23 (2010-03-09)
 trace = ["libsqlite3-sys/min_sqlite_version_3_6_23"]
 bundled = ["libsqlite3-sys/bundled", "modern_sqlite"]
 buildtime_bindgen = ["libsqlite3-sys/buildtime_bindgen"]
+loadable_extension = ["libsqlite3-sys/loadable_extension"]
+loadable_extension_embedded = ["loadable_extension", "libsqlite3-sys/loadable_extension_embedded"]
 limits = []
 hooks = []
 i128_blob = ["byteorder"]
@@ -44,11 +47,11 @@ unlock_notify = ["libsqlite3-sys/unlock_notify"]
 vtab = ["libsqlite3-sys/min_sqlite_version_3_7_7", "lazy_static"]
 csvtab = ["csv", "vtab"]
 # pointer passing interfaces: 3.20.0
-array = ["vtab"]
+array = ["modern_sqlite", "vtab"]
 # session extension: 3.13.0
-session = ["libsqlite3-sys/session", "hooks"]
+session = ["modern_sqlite", "libsqlite3-sys/session", "hooks"]
 # window functions: 3.25.0
-window = ["functions"]
+window = ["modern_sqlite", "functions"]
 # 3.9.0
 series = ["vtab"]
 # check for invalid query.

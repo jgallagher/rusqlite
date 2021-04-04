@@ -1,10 +1,3 @@
-// This is used when either vtab or modern-sqlite is on. Different methods are
-// used in each feature. Avoid having to track this for each function. We will
-// still warn for anything that's not used by either, though.
-#![cfg_attr(
-    not(all(feature = "vtab", feature = "modern-sqlite")),
-    allow(dead_code)
-)]
 use crate::ffi;
 use std::marker::PhantomData;
 use std::os::raw::{c_char, c_int};

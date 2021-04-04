@@ -80,7 +80,15 @@ impl Connection {
         let c = self.db.borrow();
         unsafe {
             let mut val = 0;
+            #[cfg(not(feature = "loadable_extension"))]
             check!(ffi::sqlite3_db_config(
+                c.db(),
+                config as c_int,
+                -1,
+                &mut val
+            ));
+            #[cfg(feature = "loadable_extension")]
+            check!(ffi::sqlite3_db_config_int_mutint(
                 c.db(),
                 config as c_int,
                 -1,
@@ -109,7 +117,15 @@ impl Connection {
         let c = self.db.borrow_mut();
         unsafe {
             let mut val = 0;
+            #[cfg(not(feature = "loadable_extension"))]
             check!(ffi::sqlite3_db_config(
+                c.db(),
+                config as c_int,
+                if new_val { 1 } else { 0 },
+                &mut val
+            ));
+            #[cfg(feature = "loadable_extension")]
+            check!(ffi::sqlite3_db_config_int_mutint(
                 c.db(),
                 config as c_int,
                 if new_val { 1 } else { 0 },

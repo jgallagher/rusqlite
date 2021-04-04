@@ -77,6 +77,22 @@ jobs:
       - run: cargo build --features sqlcipher --workspace --all-targets --verbose
       - run: cargo test --features sqlcipher --workspace --all-targets --verbose
 
+  dummy-extension:
+    name: Test loadable_extension with dummy-extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+      - run: ./dummy-extension/integration-test.sh
+
+  dummy-embedded-extension:
+    name: Test loadable_extension_embedded with dummy-embedded-extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+      - run: ./dummy-embedded-extension/integration-test.sh
+
   sanitizer:
     name: Address Sanitizer
     runs-on: ubuntu-latest
@@ -111,6 +127,7 @@ jobs:
       - run: cargo clippy --all-targets --workspace --features bundled -- -D warnings
       # Clippy with all non-conflicting features
       - run: cargo clippy --all-targets --workspace --features 'bundled-full session buildtime_bindgen time' -- -D warnings
+      - run: (cd dummy-extension && cargo clippy --all-targets -- -D warnings)
 
   # Ensure patch is formatted.
   fmt:

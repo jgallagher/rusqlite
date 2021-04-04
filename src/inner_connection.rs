@@ -4,7 +4,7 @@ use std::os::raw::{c_char, c_int};
 use std::path::Path;
 use std::ptr;
 use std::str;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
 use super::ffi;
@@ -14,7 +14,6 @@ use crate::error::{error_from_handle, error_from_sqlite_code, Error};
 use crate::raw_statement::RawStatement;
 use crate::statement::Statement;
 use crate::unlock_notify;
-use crate::version::version_number;
 
 pub struct InnerConnection {
     pub db: *mut ffi::sqlite3,
@@ -326,7 +325,8 @@ pub static BYPASS_VERSION_CHECK: AtomicBool = AtomicBool::new(false);
 
 #[cfg(not(feature = "bundled"))]
 fn ensure_valid_sqlite_version() {
-    use crate::version::version;
+    use crate::version::{version, version_number};
+    use std::sync::atomic::Ordering;
 
     SQLITE_VERSION_CHECK.call_once(|| {
         let version_number = version_number();
@@ -368,20 +368,28 @@ rusqlite was built against SQLite {} but the runtime SQLite version is {}. To fi
     });
 }
 
-#[cfg(not(any(target_arch = "wasm32")))]
+#[cfg(not(any(target_arch = "wasm32", feature = "loadable_extension",)))]
 static SQLITE_INIT: std::sync::Once = std::sync::Once::new();
 
 pub static BYPASS_SQLITE_INIT: AtomicBool = AtomicBool::new(false);
 
 // threading mode checks are not necessary (and do not work) on target
 // platforms that do not have threading (such as webassembly)
-#[cfg(any(target_arch = "wasm32"))]
+//
+// threading mode checks are also not possible when built as a loadable extension
+// since the sqlite3_threadsafe, sqlite3_config, and sqlite3_initialize API calls
+// are not available via the sqlite3_api_routines struct.
+#[cfg(any(target_arch = "wasm32", feature = "loadable_extension",))]
+#[allow(clippy::unnecessary_wraps)]
 fn ensure_safe_sqlite_threading_mode() -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(any(target_arch = "wasm32")))]
+#[cfg(not(any(target_arch = "wasm32", feature = "loadable_extension",)))]
 fn ensure_safe_sqlite_threading_mode() -> Result<()> {
+    use crate::version::version_number;
+    use std::sync::atomic::Ordering;
+
     // Ensure SQLite was compiled in thredsafe mode.
     if unsafe { ffi::sqlite3_threadsafe() == 0 } {
         return Err(Error::SqliteSingleThreadedMode);

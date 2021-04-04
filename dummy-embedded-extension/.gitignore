@@ -1,0 +1,3 @@
+dummy-embedded-extension.h
+dummy-c-host-extension/libdummy_c_host_extension.so
+target/

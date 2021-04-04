@@ -71,6 +71,7 @@ use crate::types::ValueRef;
 
 pub use crate::cache::CachedStatement;
 pub use crate::column::Column;
+pub use crate::error::to_sqlite_error;
 pub use crate::error::Error;
 pub use crate::ffi::ErrorCode;
 #[cfg(feature = "hooks")]
@@ -1009,7 +1010,11 @@ impl InterruptHandle {
     pub fn interrupt(&self) {
         let db_handle = self.db_lock.lock().unwrap();
         if !db_handle.is_null() {
-            unsafe { ffi::sqlite3_interrupt(*db_handle) }
+            #[cfg(not(feature = "loadable_extension"))]
+            // no sqlite3_interrupt in a loadable extension
+            unsafe {
+                ffi::sqlite3_interrupt(*db_handle)
+            }
         }
     }
 }
