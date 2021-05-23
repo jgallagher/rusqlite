@@ -101,8 +101,8 @@ pub mod config;
 mod context;
 #[cfg(feature = "functions")]
 pub mod functions;
-#[cfg(feature = "hooks")]
-mod hooks;
+#[cfg(any(feature = "hooks", feature = "preupdate_hook"))]
+pub mod hooks;
 mod inner_connection;
 #[cfg(feature = "limits")]
 pub mod limits;

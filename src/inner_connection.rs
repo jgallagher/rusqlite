@@ -33,6 +33,8 @@ pub struct InnerConnection {
     pub free_update_hook: Option<unsafe fn(*mut ::std::os::raw::c_void)>,
     #[cfg(feature = "hooks")]
     pub progress_handler: Option<Box<dyn FnMut() -> bool + Send>>,
+    #[cfg(feature = "preupdate_hook")]
+    pub free_preupdate_hook: Option<unsafe fn(*mut ::std::os::raw::c_void)>,
     owned: bool,
 }
 
@@ -51,6 +53,8 @@ impl InnerConnection {
             free_update_hook: None,
             #[cfg(feature = "hooks")]
             progress_handler: None,
+            #[cfg(feature = "preupdate_hook")]
+            free_preupdate_hook: None,
             owned,
         }
     }
@@ -151,6 +155,7 @@ impl InnerConnection {
             return Ok(());
         }
         self.remove_hooks();
+        self.remove_preupdate_hook();
         let mut shared_handle = self.interrupt_lock.lock().unwrap();
         assert!(
             !shared_handle.is_null(),
@@ -301,6 +306,10 @@ impl InnerConnection {
     #[cfg(not(feature = "hooks"))]
     #[inline]
     fn remove_hooks(&mut self) {}
+
+    #[cfg(not(feature = "preupdate_hook"))]
+    #[inline]
+    fn remove_preupdate_hook(&mut self) {}
 }
 
 impl Drop for InnerConnection {
