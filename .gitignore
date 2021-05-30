@@ -1,3 +1,4 @@
 /target/
 /doc/
 Cargo.lock
+.idea

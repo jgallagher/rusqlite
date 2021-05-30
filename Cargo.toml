@@ -39,6 +39,7 @@ limits = []
 hooks = []
 i128_blob = ["byteorder"]
 sqlcipher = ["libsqlite3-sys/sqlcipher"]
+static_linked = ["libsqlite3-sys/static_linked"]
 unlock_notify = ["libsqlite3-sys/unlock_notify"]
 # xSavepoint, xRelease and xRollbackTo: 3.7.7 (2011-06-23)
 vtab = ["libsqlite3-sys/min_sqlite_version_3_7_7", "lazy_static"]

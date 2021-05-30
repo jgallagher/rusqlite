@@ -251,6 +251,12 @@ mod build_linked {
     }
 
     fn find_link_mode() -> &'static str {
+        // since it is difficult to set environment variables from an upstream dependency
+        // without fiddling with cargo build flags and since build.rs of upstream (which could have set the env variables) don't run in the proper order
+        // it is easier for a consumer to set a feature flag instead of a env flag
+        if cfg!(feature = "static_linked") {
+            return "static"
+        }
         // If the user specifies SQLITE3_STATIC (or SQLCIPHER_STATIC), do static
         // linking, unless it's explicitly set to 0.
         match &env::var(format!("{}_STATIC", env_prefix())) {
@@ -260,6 +266,9 @@ mod build_linked {
     }
     // Prints the necessary cargo link commands and returns the path to the header.
     fn find_sqlite() -> HeaderLocation {
+        if find_link_mode() == "static" {
+            std::env::set_var("SQLCIPHER_STATIC" , "1");
+        }
         let link_lib = link_lib();
 
         println!("cargo:rerun-if-env-changed={}_INCLUDE_DIR", env_prefix());
