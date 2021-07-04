@@ -252,6 +252,15 @@ mod build_bundled {
                 cfg.file("sqlite3/wasm32-wasi-vfs.c");
             }
         }
+
+        if env::var("TARGET") == Ok("wasm32-unknown-unknown".to_string()) {
+            cfg.flag("-DSQLITE_OUTER_MALLOC");
+            cfg.flag("-DSQLITE_OS_OTHER")
+                .flag("-DLONGDOUBLE_TYPE=double");
+            cfg.file("sqlite3/wasm-ext.c");
+            cfg.include("wasm-include");
+        }
+
         if cfg!(feature = "unlock_notify") {
             cfg.flag("-DSQLITE_ENABLE_UNLOCK_NOTIFY");
         }
@@ -260,6 +269,9 @@ mod build_bundled {
         }
         if cfg!(feature = "session") {
             cfg.flag("-DSQLITE_ENABLE_SESSION");
+        }
+        if cfg!(feature = "sqlite-memvfs") {
+            cfg.flag("-DSQLITE_OS_OTHER");
         }
 
         if let Ok(limit) = env::var("SQLITE_MAX_VARIABLE_NUMBER") {

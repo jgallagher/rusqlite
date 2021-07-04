@@ -72,3 +72,64 @@ impl Default for sqlite3_vtab_cursor {
         unsafe { mem::zeroed() }
     }
 }
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+mod allocator {
+    use std::alloc::{alloc, dealloc, realloc as rs_realloc, Layout};
+
+    #[no_mangle]
+    pub unsafe fn sqlite_malloc(len: usize) -> *mut u8 {
+        let align = std::mem::align_of::<usize>();
+        let layout = Layout::from_size_align_unchecked(len, align);
+
+        let ptr = alloc(layout);
+        ptr
+    }
+
+    const SQLITE_PTR_SIZE: usize = 8;
+
+    #[no_mangle]
+    pub unsafe fn sqlite_free(ptr: *mut u8) -> i32 {
+        let mut size_a = [0; SQLITE_PTR_SIZE];
+
+        size_a.as_mut_ptr().copy_from(ptr, SQLITE_PTR_SIZE);
+
+        let ptr_size: u64 = u64::from_le_bytes(size_a);
+
+        let align = std::mem::align_of::<usize>();
+        let layout = Layout::from_size_align_unchecked(ptr_size as usize, align);
+
+        dealloc(ptr, layout);
+
+        0
+    }
+
+    #[no_mangle]
+    pub unsafe fn sqlite_realloc(ptr: *mut u8, size: usize) -> *mut u8 {
+        let align = std::mem::align_of::<usize>();
+        let layout = Layout::from_size_align_unchecked(size, align);
+
+        rs_realloc(ptr, layout, size)
+    }
+}
+
+#[cfg(feature = "sqlite-memvfs")]
+mod memvfs;
+
+#[cfg(feature = "sqlite-memvfs")]
+mod vfs {
+    use log::debug;
+
+    #[no_mangle]
+    pub unsafe fn sqlite3_os_init() -> std::os::raw::c_int {
+        let mut mem_vfs = Box::new(super::memvfs::get_mem_vfs());
+
+        let mem_vfs_ptr: *mut crate::sqlite3_vfs = mem_vfs.as_mut();
+        let rc = crate::sqlite3_vfs_register(mem_vfs_ptr, 1);
+        debug!("sqlite3 vfs register result: {}", rc);
+
+        std::mem::forget(mem_vfs);
+
+        rc
+    }
+}
