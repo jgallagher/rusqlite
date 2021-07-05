@@ -101,6 +101,8 @@ mod column;
 pub mod config;
 #[cfg(any(feature = "functions", feature = "vtab"))]
 mod context;
+#[cfg(any(feature = "deserialize"))]
+pub mod deserialize;
 #[cfg(feature = "functions")]
 #[cfg_attr(docsrs, doc(cfg(feature = "functions")))]
 pub mod functions;

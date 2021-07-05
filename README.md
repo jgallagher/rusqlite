@@ -112,6 +112,7 @@ features](https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-s
 * [`array`](https://sqlite.org/carray.html), The `rarray()` Table-Valued Function. (Implies `vtab`.)
 * `i128_blob` allows storing values of type `i128` type in SQLite databases. Internally, the data is stored as a 16 byte big-endian blob, with the most significant bit flipped, which allows ordering and comparison between different blobs storing i128s to work as expected.
 * `uuid` allows storing and retrieving `Uuid` values from the [`uuid`](https://docs.rs/uuid/) crate using blobs.
+* `deserialize` implements serialize and deserialize interfaces, to use a `Vec<u8>` as in-memory database file.
 * [`session`](https://sqlite.org/sessionintro.html), Session module extension. Requires `buildtime_bindgen` feature. (Implies `hooks`.)
 * `extra_check` fail when a query passed to execute is readonly or has a column count > 0.
 * `column_decltype` provides `columns()` method for Statements and Rows; omit if linking to a version of SQLite/SQLCipher compiled with `-DSQLITE_OMIT_DECLTYPE`.

@@ -4,7 +4,9 @@ use std::os::raw::{c_char, c_int};
 use std::path::Path;
 use std::ptr;
 use std::str;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
+#[cfg(not(any(target_arch = "wasm32")))]
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use super::ffi;
@@ -14,7 +16,6 @@ use crate::error::{error_from_handle, error_from_sqlite_code, Error};
 use crate::raw_statement::RawStatement;
 use crate::statement::Statement;
 use crate::unlock_notify;
-use crate::version::version_number;
 
 pub struct InnerConnection {
     pub db: *mut ffi::sqlite3,
@@ -339,7 +340,7 @@ fn ensure_valid_sqlite_version() {
     use crate::version::version;
 
     SQLITE_VERSION_CHECK.call_once(|| {
-        let version_number = version_number();
+        let version_number = crate::version::version_number();
 
         // Check our hard floor.
         if version_number < 3_006_008 {
@@ -414,7 +415,7 @@ fn ensure_safe_sqlite_threading_mode() -> Result<()> {
     //    mode. This will fail if someone else has already initialized SQLite
     //    even if they initialized it safely. That's not ideal either, which is
     //    why we expose bypass_sqlite_initialization    above.
-    if version_number() >= 3_007_000 {
+    if crate::version::version_number() >= 3_007_000 {
         const SQLITE_SINGLETHREADED_MUTEX_MAGIC: usize = 8;
         let is_singlethreaded = unsafe {
             let mutex_ptr = ffi::sqlite3_mutex_alloc(0);
