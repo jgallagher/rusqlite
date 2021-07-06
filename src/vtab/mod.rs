@@ -306,6 +306,7 @@ impl From<u8> for IndexConstraintOp {
 /// [`VTab::best_index`] method.
 ///
 /// (See [SQLite doc](http://sqlite.org/c3ref/index_info.html))
+#[derive(Debug)]
 pub struct IndexInfo(*mut ffi::sqlite3_index_info);
 
 impl IndexInfo {
@@ -352,6 +353,15 @@ impl IndexInfo {
         }
     }
 
+    /// String passed if/when filter() is called on the cursor
+    #[inline]
+    pub fn set_idx_str(&mut self, idx_str: &str) {
+        unsafe {
+            (*self.0).idxStr = alloc(&idx_str.to_string());
+            (*self.0).needToFreeIdxStr = true as i32;
+        }
+    }
+
     /// True if output is already ordered
     #[inline]
     pub fn set_order_by_consumed(&mut self, order_by_consumed: bool) {
@@ -378,10 +388,38 @@ impl IndexInfo {
         }
     }
 
-    // TODO idxFlags
-    // TODO colUsed
+    /// Set flags to indicate properties of the index
+    /// See: https://sqlite.org/c3ref/c_index_scan_unique.html
+    #[cfg(feature = "modern_sqlite")] // SQLite >= 3.9.0
+    #[inline]
+    pub fn set_idx_flags(&mut self, idx_flags: c_int) {
+        unsafe {
+            (*self.0).idxFlags = idx_flags;
+        }
+    }
 
-    // TODO sqlite3_vtab_collation (http://sqlite.org/c3ref/vtab_collation.html)
+    /// Information about the columns required for the query
+    #[cfg(feature = "modern_sqlite")] // SQLite >= 3.10.0
+    #[inline]
+    pub fn col_used(&self) -> u64 {
+        unsafe { (*self.0).colUsed as u64 }
+    }
+
+    /// Determine the collation for a virtual table constraint
+    /// https://sqlite.org/c3ref/vtab_collation.html
+    /// May only be called during the best_index call
+    #[cfg(feature = "modern_sqlite")] // SQLite >= 3.22.0
+    #[inline]
+    pub fn collation(&self, constraint_idx: usize) -> Result<&str> {
+        use std::ffi::CStr;
+        let constraint_idx_c = constraint_idx as c_int;
+        let collation_c_buf = unsafe { ffi::sqlite3_vtab_collation(self.0, constraint_idx_c) };
+        let collation_c_str = unsafe { CStr::from_ptr(collation_c_buf) };
+        match collation_c_str.to_str() {
+            Ok(collation) => Ok(collation),
+            Err(err) => Err(Error::Utf8Error(err)),
+        }
+    }
 }
 
 /// `feature = "vtab"`
@@ -513,6 +551,11 @@ pub unsafe trait VTabCursor: Sized {
     /// Return the rowid of row that the cursor is currently pointing at.
     /// (See [SQLite doc](https://sqlite.org/vtab.html#the_xrowid_method))
     fn rowid(&self) -> Result<i64>;
+    /// Allow the cursor to clean up after itself
+    /// (See [SQLite doc](https://sqlite.org/vtab.html#the_xclose_method)
+    fn close(&mut self) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Context is used by [`VTabCursor::column`] to specify the
@@ -933,6 +976,7 @@ where
     C: VTabCursor,
 {
     let cr = cursor as *mut C;
+    cursor_error(cursor, (*cr).close());
     let _: Box<C> = Box::from_raw(cr);
     ffi::SQLITE_OK
 }
