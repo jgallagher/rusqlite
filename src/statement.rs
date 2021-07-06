@@ -568,11 +568,8 @@ impl Statement<'_> {
     }
 
     #[inline]
-    pub(crate) fn bind_parameters_named<T: ?Sized + ToSql>(
-        &mut self,
-        params: &[(&str, &T)],
-    ) -> Result<()> {
-        for &(name, value) in params {
+    pub(crate) fn bind_parameters_named<T: ToSql>(&mut self, params: &[(&str, T)]) -> Result<()> {
+        for &(name, ref value) in params {
             if let Some(i) = self.parameter_index(name)? {
                 let ts: &dyn ToSql = &value;
                 self.bind_parameter(ts, i)?;

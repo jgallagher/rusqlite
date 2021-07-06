@@ -188,8 +188,8 @@ impl Params for &[&dyn ToSql] {
     }
 }
 
-impl Sealed for &[(&str, &dyn ToSql)] {}
-impl Params for &[(&str, &dyn ToSql)] {
+impl<T: ToSql> Sealed for &[(&str, T)] {}
+impl<T: ToSql> Params for &[(&str, T)] {
     #[inline]
     fn __bind_in(self, stmt: &mut Statement<'_>) -> Result<()> {
         stmt.bind_parameters_named(self)
