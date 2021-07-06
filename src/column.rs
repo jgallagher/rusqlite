@@ -7,6 +7,8 @@ use crate::{Error, Result, Statement};
 pub struct Column<'stmt> {
     name: &'stmt str,
     decl_type: Option<&'stmt str>,
+    origin_name: Option<&'stmt str>,
+    table_name: Option<&'stmt str>,
 }
 
 impl Column<'_> {
@@ -20,6 +22,18 @@ impl Column<'_> {
     #[inline]
     pub fn decl_type(&self) -> Option<&str> {
         self.decl_type
+    }
+
+    /// Returns the name of the originating (e.g., aliased) column (`None` for expression).
+    #[inline]
+    pub fn origin_name(&self) -> Option<&str> {
+        self.origin_name
+    }
+
+    /// Returns the table from which this column was sourced (`None` for expression).
+    #[inline]
+    pub fn table_name(&self) -> Option<&str> {
+        self.table_name
     }
 }
 
@@ -134,15 +148,27 @@ impl Statement<'_> {
     #[cfg(feature = "column_decltype")]
     #[cfg_attr(docsrs, doc(cfg(feature = "column_decltype")))]
     pub fn columns(&self) -> Vec<Column> {
+        macro_rules! expect_optional_str {
+            ($cstr:expr) => {
+                $cstr.map(|s| {
+                    str::from_utf8(s.to_bytes())
+                        .expect("Invalid UTF-8 sequence in column declaration")
+                })
+            };
+        }
         let n = self.column_count();
         let mut cols = Vec::with_capacity(n as usize);
         for i in 0..n {
             let name = self.column_name_unwrap(i);
-            let slice = self.stmt.column_decltype(i);
-            let decl_type = slice.map(|s| {
-                str::from_utf8(s.to_bytes()).expect("Invalid UTF-8 sequence in column declaration")
+            let decl_type = expect_optional_str!(self.stmt.column_decltype(i));
+            let table_name = expect_optional_str!(self.stmt.column_table_name(i));
+            let origin_name = expect_optional_str!(self.stmt.column_origin_name(i));
+            cols.push(Column {
+                name,
+                decl_type,
+                origin_name,
+                table_name,
             });
-            cols.push(Column { name, decl_type });
         }
         cols
     }
@@ -158,18 +184,31 @@ mod test {
         use super::Column;
 
         let db = Connection::open_in_memory()?;
-        let query = db.prepare("SELECT * FROM sqlite_master")?;
+        db.execute_batch(
+            "CREATE TABLE foo(x INTEGER, y TEXT);
+             CREATE TABLE bar(y TEXT, z REAL);",
+        )?;
+        let query = db.prepare("SELECT 1, x, y, z AS x FROM foo JOIN bar USING (y)")?;
         let columns = query.columns();
+
         let column_names: Vec<&str> = columns.iter().map(Column::name).collect();
-        assert_eq!(
-            column_names.as_slice(),
-            &["type", "name", "tbl_name", "rootpage", "sql"]
-        );
+        assert_eq!(column_names.as_slice(), &["1", "x", "y", "x"]);
+
         let column_types: Vec<Option<&str>> = columns.iter().map(Column::decl_type).collect();
         assert_eq!(
-            &column_types[..3],
-            &[Some("text"), Some("text"), Some("text"),]
+            &column_types,
+            &[None, Some("INTEGER"), Some("TEXT"), Some("REAL")]
         );
+
+        let column_origins: Vec<Option<&str>> = columns.iter().map(Column::origin_name).collect();
+        assert_eq!(&column_origins, &[None, Some("x"), Some("y"), Some("z"),]);
+
+        let column_tables: Vec<Option<&str>> = columns.iter().map(Column::table_name).collect();
+        assert_eq!(
+            &column_tables,
+            &[None, Some("foo"), Some("foo"), Some("bar"),]
+        );
+
         Ok(())
     }
 

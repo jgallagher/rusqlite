@@ -84,6 +84,32 @@ impl RawStatement {
     }
 
     #[inline]
+    #[cfg(feature = "column_decltype")]
+    pub fn column_table_name(&self, idx: usize) -> Option<&CStr> {
+        unsafe {
+            let table_name = ffi::sqlite3_column_table_name(self.ptr, idx as c_int);
+            if table_name.is_null() {
+                None
+            } else {
+                Some(CStr::from_ptr(table_name))
+            }
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "column_decltype")]
+    pub fn column_origin_name(&self, idx: usize) -> Option<&CStr> {
+        unsafe {
+            let table_origin = ffi::sqlite3_column_origin_name(self.ptr, idx as c_int);
+            if table_origin.is_null() {
+                None
+            } else {
+                Some(CStr::from_ptr(table_origin))
+            }
+        }
+    }
+
+    #[inline]
     pub fn column_name(&self, idx: usize) -> Option<&CStr> {
         let idx = idx as c_int;
         if idx < 0 || idx >= self.column_count() as c_int {
