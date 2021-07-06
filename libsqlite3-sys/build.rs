@@ -537,7 +537,8 @@ mod bindings {
             .trust_clang_mangling(false)
             .header(header.clone())
             .parse_callbacks(Box::new(SqliteTypeChooser))
-            .rustfmt_bindings(true);
+            .rustfmt_bindings(true)
+            .clang_arg("-DSQLITE_API=__attribute__ ((visibility(\"default\")))"); // ensure SQLITE_API functions are not hidden
 
         if cfg!(any(feature = "sqlcipher", feature = "bundled-sqlcipher")) {
             bindings = bindings.clang_arg("-DSQLITE_HAS_CODEC");
